@@ -59,7 +59,11 @@ public class MainActivity extends AppCompatActivity {
         String indexFile = readFileToString("index.html");
 
         // Perform search and replace operations.
-        indexFile = indexFile.replace("INSERT_TITLE_HERE", "Hello, World!");
+
+        String iframe = "<html><body>Video From YouTube<br><iframe width=\"420\" height=\"315\" src=\"https://www.youtube.com/embed/47yJ2XCRLZs\" frameborder=\"0\" allowfullscreen></iframe></body></html>";
+
+
+        indexFile = indexFile.replace("INSERT_TITLE_HERE", iframe);
 
         // Load the web page with all assets that are referenced in the HTML file.
         webView.loadDataWithBaseURL("file:///android_asset/", indexFile, "text/html", "utf-8", null);

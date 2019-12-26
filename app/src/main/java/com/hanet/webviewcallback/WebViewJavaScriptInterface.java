@@ -11,7 +11,7 @@ public class WebViewJavaScriptInterface {
     }
 
     @JavascriptInterface
-    public void makeToast(String message, boolean lengthLong){
+    public void makeToasts(String message, boolean lengthLong){
         Toast.makeText(context, message, lengthLong ? Toast.LENGTH_LONG: Toast.LENGTH_SHORT).show();
     }
 
