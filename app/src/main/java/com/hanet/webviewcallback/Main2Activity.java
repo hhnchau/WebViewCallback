@@ -22,7 +22,7 @@ public class Main2Activity extends AppCompatActivity {
 
         final YtPlayer ytPlayer = findViewById(R.id.yt);
         ytPlayer.setAutoPlayerHeight(this);
-        ytPlayer.initPlayer("HsgTIMDA6ps");
+        ytPlayer.initPlayer("PJQMdNceRsA");
         ytPlayer.setListener(new YtPlayer.YouTubeListener() {
             @Override
             public void onReady() {
@@ -46,7 +46,7 @@ public class Main2Activity extends AppCompatActivity {
 
             @Override
             public void onError(String arg) {
-                Toast.makeText(Main2Activity.this, "onError", Toast.LENGTH_SHORT).show();
+                Toast.makeText(Main2Activity.this, "onError: " + arg, Toast.LENGTH_SHORT).show();
             }
 
             @Override

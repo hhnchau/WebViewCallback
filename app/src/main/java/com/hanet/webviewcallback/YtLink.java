@@ -19,45 +19,33 @@ import android.widget.LinearLayout;
 
 import androidx.annotation.Nullable;
 
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 public class YtLink extends WebView {
-    private Link link;
-    private boolean isCallback = true;
-
-    private OnYtLink callback;
-
-    public void addListener(OnYtLink callback) {
-        this.callback = callback;
-    }
-
-    public interface OnYtLink {
-        void ytLink(Link yt);
-    }
+    private boolean isCallback = false;
+    private int count = 0;
+    private boolean isBlock = true;
+    private String videoId = "";
 
     public YtLink(Context context) {
         super(context);
-        init();
     }
 
     public YtLink(Context context, AttributeSet attrs) {
         super(context, attrs);
-        init();
     }
 
     @SuppressLint("SetJavaScriptEnabled")
-    public void init() {
-        this.setVisibility(INVISIBLE);
-        LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(100, 100);
-        this.setLayoutParams(layoutParams);
+    public void init(final String videoId, int width, int height, final OnListener listener) {
+        this.videoId = videoId;
+        final Yt yt = new Yt();
+//        this.setVisibility(INVISIBLE);
+//        LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(100, 100);
+//        this.setLayoutParams(layoutParams);
         WebSettings set = this.getSettings();
         set.setJavaScriptEnabled(true);
         set.setUseWideViewPort(true);
         set.setLoadWithOverviewMode(true);
         set.setLayoutAlgorithm(WebSettings.LayoutAlgorithm.NORMAL);
         set.setCacheMode(WebSettings.LOAD_NO_CACHE);
-        set.setPluginState(WebSettings.PluginState.ON);
         set.setPluginState(WebSettings.PluginState.ON_DEMAND);
         set.setAllowContentAccess(true);
         set.setAllowFileAccess(true);
@@ -71,12 +59,10 @@ public class YtLink extends WebView {
                 long downTime = SystemClock.uptimeMillis();
                 float x = view.getLeft() + (view.getWidth() / 2);
                 float y = view.getTop() + (view.getHeight() / 2);
-
                 MotionEvent tapDownEvent = MotionEvent.obtain(downTime, downTime + delta, MotionEvent.ACTION_DOWN, x, y, 0);
                 tapDownEvent.setSource(InputDevice.SOURCE_CLASS_POINTER);
                 MotionEvent tapUpEvent = MotionEvent.obtain(downTime, downTime + delta + 2, MotionEvent.ACTION_UP, x, y, 0);
                 tapUpEvent.setSource(InputDevice.SOURCE_CLASS_POINTER);
-
                 view.dispatchTouchEvent(tapDownEvent);
                 view.dispatchTouchEvent(tapUpEvent);
             }
@@ -84,21 +70,33 @@ public class YtLink extends WebView {
             @Nullable
             @Override
             public WebResourceResponse shouldInterceptRequest(WebView view, final String url) {
-                if (!isCallback)
+                if (!isCallback) {
+                    if (url.matches(".*get_video_info?.*")) {
+                        Log.d("YtLink", "Get_Video_Info: " + url);
+                        isBlock = false;
+                    }
+                    if (!isBlock && count < 10) {
+                        count++;
+                        Log.d("YtLink", "Error: " + count);
+                    } else if (!isBlock) {
+                        isBlock = true;
+                        Log.d("YtLink", "Callback Error: ");
+                        if (listener != null) listener.yt(null);
+                    }
                     if (url.matches(".*googlevideo.com/videoplayback.*")) {
+                        isBlock = true;
                         new Handler(Looper.getMainLooper()).post(new Runnable() {
                             @Override
                             public void run() {
                                 if (url.contains("&mime=video")) {
-                                    if (link.getLink() == null) {
-                                        link.setLink(url);
-                                        Log.d("YtLink", "Video Normal: " + url.replaceAll("&range=[\\d-]*&", "&"));
+                                    if (yt.getVideo() == null) {
+                                        String lk = url.replaceAll("&range=[\\d-]*&", "&");
+                                        Log.d("YtLink", "Video Normal: " + lk);
+                                        yt.setVideo(lk);
                                     } else {
-                                        link.setLinkQuality(url);
-                                        Log.d("YtLink", "Video Quality: " + url.replaceAll("&range=[\\d-]*&", "&"));
-                                        if (callback != null) {
-                                            callback.ytLink(link);
-                                        }
+                                        String lk = url.replaceAll("&range=[\\d-]*&", "&");
+                                        Log.d("YtLink", "Video Quality: " + lk);
+                                        if (listener != null) listener.yt(yt);
                                         isCallback = !isCallback;
                                         stopLoading();
                                         clearCache(true);
@@ -106,48 +104,48 @@ public class YtLink extends WebView {
                                         clearHistory();
                                         clearView();
                                     }
-                                } else if (url.contains("&mime=audio") && link.getAudio() == null) {
-                                    link.setAudio(url);
-                                    Log.d("YtLink", "Audio: " + url.replaceAll("&range=[\\d-]*&", "&"));
+                                } else if (url.contains("&mime=audio")) {
+                                    String lk = url.replaceAll("&range=[\\d-]*&", "&");
+                                    Log.d("YtLink", "Audio: " + lk);
+                                    yt.setAudio(lk);
                                 }
                             }
                         });
                     }
+                }
                 return super.shouldInterceptRequest(view, url);
             }
         });
+        String frameVideo = "<html><body><iframe width='" + width + "' height='" + height + "' src=\"https://www.youtube.com/embed/" + videoId + "\"></iframe></body></html>";
+        loadData(frameVideo, "text/html", "utf-8");
     }
 
-    public void load(final String videoId) {
-        link = new Link();
-        isCallback = !isCallback;
-        new Handler().post(new Runnable() {
-            @Override
-            public void run() {
-                loadUrl("https://www.youtube.com/watch?v=" + videoId);
-            }
-        });
+    public void reInit() {
+        loadUrl("https://www.youtube.com/watch?v=" + videoId);
     }
 
-    class Link {
+    public interface OnListener {
+        void yt(Yt yt);
+    }
+
+    public class Yt {
+        private String video;
         private String audio;
-        private String link;
-        private String linkQuality;
 
-        public String getLink() {
-            return link;
+        public Yt() {
         }
 
-        public void setLink(String link) {
-            this.link = link;
+        public Yt(String video, String audio) {
+            this.video = video;
+            this.audio = audio;
         }
 
-        public String getLinkQuality() {
-            return linkQuality;
+        public String getVideo() {
+            return video;
         }
 
-        public void setLinkQuality(String linkQuality) {
-            this.linkQuality = linkQuality;
+        public void setVideo(String video) {
+            this.video = video;
         }
 
         public String getAudio() {
@@ -157,20 +155,5 @@ public class YtLink extends WebView {
         public void setAudio(String audio) {
             this.audio = audio;
         }
-    }
-
-    private int getItag(String url) {
-        Matcher siteNameMatcher = Pattern.compile("&itag=([^\"]{3})").matcher(url);
-        while (siteNameMatcher.find()) {
-            String s = siteNameMatcher.group(1);
-            if (s != null) {
-                try {
-                    return Integer.parseInt(s);
-                } catch (NumberFormatException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-        return 0;
     }
 }

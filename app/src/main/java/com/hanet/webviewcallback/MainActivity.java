@@ -74,7 +74,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void goToSecondActivity() {
-        Intent intent = new Intent(this, Main2Activity.class);
+        Intent intent = new Intent(this, Main3Activity.class);
         startActivity(intent);
     }
 

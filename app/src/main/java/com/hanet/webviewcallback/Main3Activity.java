@@ -7,24 +7,31 @@ import android.view.View;
 import android.widget.Toast;
 
 public class Main3Activity extends AppCompatActivity {
-    YtLink ytLink;
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main3);
-        ytLink = findViewById(R.id.ytLink);
-        ytLink.load("Lc3VgVIlu1I");
-
-        ytLink.addListener(new YtLink.OnYtLink() {
+        final YtLink ytLink = findViewById(R.id.ytLink);
+        ytLink.init("TFnEL2CmavU", 1280, 720, new YtLink.OnListener() {
             @Override
-            public void ytLink(YtLink.Link yt) {
-                Toast.makeText(Main3Activity.this, ""+yt.getLink(), Toast.LENGTH_SHORT).show();
+            public void yt(YtLink.Yt yt) {
+                if (yt == null) {
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            ytLink.reInit();
+                        }
+                    });
+                } else {
+                    Toast.makeText(Main3Activity.this, yt.getVideo() + "\n" + yt.getAudio(), Toast.LENGTH_SHORT).show();
+                }
             }
         });
-
     }
 
     public void change(View view) {
-        ytLink.load("HsgTIMDA6ps");
+
     }
 }
